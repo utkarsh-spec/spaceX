@@ -10,12 +10,12 @@ ship_image = [pygame.image.load("ship_sprites/tile000.png"), pygame.image.load("
               pygame.image.load("ship_sprites/tile004.png"), pygame.image.load("ship_sprites/tile005.png"),
               pygame.image.load("ship_sprites/tile006.png"), pygame.image.load("ship_sprites/tile007.png"),
               pygame.image.load("ship_sprites/tile008.png"), pygame.image.load("ship_sprites/tile009.png")]
-astro_sprite = [pygame.image.load("astro/1.png"), pygame.image.load("astro/2.png"),
-                pygame.image.load("astro/3.png"), pygame.image.load("astro/4.png"),
-                pygame.image.load("astro/5.png"), pygame.image.load("astro/6.png"),
-                pygame.image.load("astro/7.png"), pygame.image.load("astro/8.png"),
-                pygame.image.load("astro/9.png"), pygame.image.load("astro/10.png"), pygame.image.load("astro/11.png"),
-                pygame.image.load("astro/12.png")]
+astro_sprite = [pygame.image.load("astro/1.png"), pygame.image.load("astro/2.png"), pygame.image.load("astro/3.png"),
+                pygame.image.load("astro/4.png"), pygame.image.load("astro/5.png"), pygame.image.load("astro/6.png"),
+                pygame.image.load("astro/7.png"), pygame.image.load("astro/8.png"), pygame.image.load("astro/9.png"),
+                pygame.image.load("astro/10.png"), pygame.image.load("astro/11.png"), pygame.image.load("astro/12.png")]
+
+score = 0
 
 
 class Player(object):
@@ -28,6 +28,7 @@ class Player(object):
         self.count = 0
         self.move = True
         self.hitbox = (self.x, self.y, 16, 24)
+        self.health = 100
 
     def draw(self, display):
 
@@ -41,8 +42,18 @@ class Player(object):
 
         self.hitbox = (self.x, self.y, 16, 24)
         # pygame.draw.rect(display, (255, 0, 0), self.hitbox, 2)
+        pygame.draw.rect(display, (150, 0, 0), (20, 30, 100, 20))
+        pygame.draw.rect(display, (0, 150, 0), (20, 30, 100 - (1 * (100 - self.health)), 20))
 
     def hit(self):
+        font = pygame.font.SysFont('comicsans', 70)
+        text = font.render('HEALTH LOSS', True, (255, 0, 0))
+        display.blit(text, (80, 50))
+        pygame.display.update()
+        self.health -= 1
+        if self.health < 0:
+            self.health = 0
+
         print('hit with object')
 
 
@@ -67,18 +78,29 @@ class Enemy(object):
         self.count = 0
         self.vel = 1
         self.hitbox = (self.x+30, self.y+30, 50, 50)
+        self.health = 10
+        self.visible = True
 
     def draw(self, display):
         self.move()
         if self.count + 1 >= 96:
             self.count = 0
+        # if self.visible:
         display.blit(astro_sprite[self.count//8], (self.x, self.y))
         self.count += 1
 
         self.hitbox = (self.x+30, self.y+30, 80, 80)
         # pygame.draw.rect(display, (255, 0, 0), self.hitbox, 2)
+        # for health box
+        pygame.draw.rect(display, (255, 0, 0), (self.hitbox[0], self.hitbox[1] - 20, 50, 10))
+        pygame.draw.rect(display, (0, 255, 0), (self.hitbox[0], self.hitbox[1] - 20, 50 - (5 * (10 - self.health)), 10))
 
     def move(self):
+        if self.health == 0:
+            self.y = -100
+            self.health = 10
+            self.x = random.randint(0, 300)
+            self.visible = True
         if self.y < 500:
             self.y += self.vel
             if self.y >= 500:
@@ -87,7 +109,14 @@ class Enemy(object):
 
     def hit(self):
         bullets.pop(bullets.index(bullet))
-        print('hit')
+        self.health -= 1
+        if self.health < 0:
+            self.health = 0
+        if self.health == 0:
+            self.visible = False
+        if not self.visible:
+            global score
+            score += 1
 
 
 ship = Player(225, 400, 16, 24)
@@ -97,6 +126,15 @@ astra = Enemy(200, -100, 145, 145)
 def game_window():
     ship.draw(display)
     astra.draw(display)
+    # health bar
+    font1 = pygame.font.SysFont('comicsans', 22)
+    text1 = font1.render('HEALTH BAR', True, (0, 200, 255))
+    display.blit(text1, (20, 10))
+    # score
+    font2 = pygame.font.SysFont('comicsans', 22)
+    text2 = font2.render('SCORE: '+ str(score), True, (0, 200, 255))
+    display.blit(text2, (400, 10))
+
     for bullet in bullets:
         bullet.draw(display)
     # update display
@@ -111,6 +149,18 @@ while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
+    # game over
+    if ship.health == 0:
+        font = pygame.font.SysFont('comicsans', 100)
+        text = font.render('GAME OVER', True, (255, 0, 0))
+        display.blit(text, (30, 100))
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    quit()
+            pygame.display.update()
+            pygame.time.delay(10)
 
     # player hit with object
     if ship.hitbox[1] < astra.hitbox[1] + astra.hitbox[3] and ship.hitbox[1] + ship.hitbox[3] > astra.hitbox[1]:
@@ -120,7 +170,7 @@ while run:
     game_window()
 
     for bullet in bullets:
-        if 0 < bullet.x < 500:
+        if 0 < bullet.y < 500:
             bullet.y -= bullet.vel
         else:
             bullets.pop(bullets.index(bullet))
@@ -143,7 +193,7 @@ while run:
 
     if key[pygame.K_SPACE]:
         # bullets counts
-        if len(bullets) < 100:
+        if len(bullets) < 5:
             bullets.append(Projectile(round(ship.x + ship.weidth//2), round(ship.y), 2, (255, 200, 0)))
 
 
