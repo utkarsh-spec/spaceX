@@ -16,6 +16,10 @@ astro_sprite = [pygame.image.load("astro/1.png"), pygame.image.load("astro/2.png
                 pygame.image.load("astro/10.png"), pygame.image.load("astro/11.png"), pygame.image.load("astro/12.png")]
 
 score = 0
+fire_sound = pygame.mixer.Sound('ship_bullet.wav')
+hit_sound = pygame.mixer.Sound('hit.wav')
+pygame.mixer.music.load('bg.mp3')
+pygame.mixer.music.play(-1)
 
 
 class Player(object):
@@ -54,7 +58,7 @@ class Player(object):
         if self.health < 0:
             self.health = 0
 
-        print('hit with object')
+        # print('hit with object')
 
 
 class Projectile(object):
@@ -108,6 +112,7 @@ class Enemy(object):
                 self.x = random.randint(0, 300)
 
     def hit(self):
+        hit_sound.play()
         bullets.pop(bullets.index(bullet))
         self.health -= 1
         if self.health < 0:
@@ -192,6 +197,7 @@ while run:
         ship.y += ship.vel
 
     if key[pygame.K_SPACE]:
+        # fire_sound.play()
         # bullets counts
         if len(bullets) < 5:
             bullets.append(Projectile(round(ship.x + ship.weidth//2), round(ship.y), 2, (255, 200, 0)))
